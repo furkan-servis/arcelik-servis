@@ -232,10 +232,12 @@ function render(){
     <div class="job-top"><b>${esc(j.serviceNo)}</b><span class="badge ${j.status}">${ST[j.status]||j.status}</span></div>
     <div>${esc(j.productModel||"-")}</div>
     <div class="meta">${esc(j.customerName||"-")} • Getiren: ${esc(j.broughtBy||"-")}</div>
+    <div class="meta">Tarih: ${formatDate(j.createdAt)}</div>
     <div class="meta">${j.partStatus==="geldi"?'<span class="dot green"></span>Parça geldi':(j.partStatus==="siparis_edildi"?'<span class="dot red"></span>Parça bekleniyor':'')}</div>
   </div>`).join("");
 }
 function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))}
+function formatDate(s){if(!s)return "-";const d=new Date(s);if(isNaN(d))return "-";return d.toLocaleString("tr-TR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}
 function nextNo(){
   let max=0;
   jobs.forEach(j=>{const m=String(j.serviceNo).match(/(\d+)$/);if(m) max=Math.max(max,parseInt(m[1],10))});
@@ -273,6 +275,8 @@ async function saveForm(){
     notes:document.getElementById("notes").value.trim(),
     createdAt:new Date().toISOString()
   };
+  const existing=jobs.find(x=>String(x.id)===String(job.id));
+  if(existing&&existing.createdAt) job.createdAt=existing.createdAt;
   if(!job.customerName||!job.broughtBy||!job.productModel||!job.faultDescription){toast("Zorunlu alanları doldur");return}
   if(job.status==="parca_bekliyor") job.partStatus="siparis_edildi";
   if(job.status==="test_bekliyor"||job.status==="test_ediliyor") job.partStatus="geldi";
@@ -297,7 +301,8 @@ function openDetail(id){
     <p>Arıza: ${esc(j.faultDescription)}</p>
     <p>Parça: ${esc(j.faultyPart||"-")} ${j.partStatus==="geldi"?'<span class="dot green"></span>':'<span class="dot red"></span>'}</p>
     <p>Test: ${j.testStatus==="basarili"?"Başarılı":j.testStatus==="basarisiz"?"Başarısız":"Bekliyor"}</p>
-    <p>Not: ${esc(j.notes||"-")}</p>`;
+    <p>Not: ${esc(j.notes||"-")}</p>
+    <p>Kayıt tarihi: ${formatDate(j.createdAt)}</p>`;
   let a=`<button class="btn btn-primary" onclick="editJob(${j.id})">Düzenle</button>`;
   if(j.partStatus==="siparis_edildi") a+=`<button class="btn btn-ok" onclick="quick(${j.id},'part')">Parça Geldi</button>`;
   if(j.status==="test_bekliyor"||j.status==="test_ediliyor"){
