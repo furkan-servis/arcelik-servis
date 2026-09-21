@@ -1,1 +1,361 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Arçelik Servis" />
+<meta name="theme-color" content="#e30613" />
+<title>Arçelik Servis Takip</title>
+<style>
+:root{--primary:#e30613;--primary-dark:#b8050f;--success:#16a34a;--warning:#ea580c;--info:#2563eb;--purple:#7c3aed;--danger:#dc2626;--bg:#f4f4f5;--card:#fff;--text:#18181b;--muted:#71717a;--border:#e4e4e7;--radius:12px;--shadow:0 2px 8px rgba(0,0,0,.08)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscroll-behavior:none;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+#app{max-width:480px;margin:0 auto;height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none;-webkit-overflow-scrolling:touch;padding-bottom:80px}
+.header{display:flex;justify-content:space-between;align-items:center;padding:calc(16px + env(safe-area-inset-top, 44px)) 16px 12px;background:var(--primary);color:#fff;position:sticky;top:0;z-index:50;box-shadow:0 2px 10px rgba(227,6,19,.3)}
+.header h1{font-size:1.2rem}
+.header-date{font-size:.75rem;opacity:.85;display:block;margin-top:2px}
+.btn-icon{width:42px;height:42px;border-radius:50%;font-size:1.6rem;border:0;background:#fff;color:var(--primary);font-weight:700}
+.dashboard{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 12px}
+.stat-card{background:var(--card);border-radius:var(--radius);padding:14px 12px;text-align:center;box-shadow:var(--shadow);border:2px solid transparent}
+.stat-card.on{border-color:var(--primary)}
+.stat-number{font-size:1.5rem;font-weight:800}
+.stat-label{font-size:.75rem;color:var(--muted);margin-top:2px}
+.stat-card.parts .stat-number{color:var(--warning)}
+.stat-card.test .stat-number{color:var(--purple)}
+.stat-card.ready .stat-number{color:var(--success)}
+.search-bar{display:flex;gap:8px;padding:0 12px 12px}
+.search-bar input,.search-bar select,input,select,textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font:inherit;background:#fff}
+.job-list{padding:0 12px}
+.job-card{background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;box-shadow:var(--shadow);border-left:5px solid #64748b}
+.job-card.aktif,.job-card.parca_geldi{border-left-color:var(--info)}
+.job-card.parca_bekliyor{border-left-color:var(--warning)}
+.job-card.test_bekliyor,.job-card.test_ediliyor{border-left-color:var(--purple)}
+.job-card.teslimata_hazir{border-left-color:var(--success)}
+.job-card.teslim_edildi{border-left-color:#16a34a}
+.job-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.badge{font-size:.72rem;padding:3px 8px;border-radius:999px;background:#f4f4f5;font-weight:700}
+.badge.parca_bekliyor{background:#ffedd5;color:#9a3412}
+.badge.test_bekliyor,.badge.test_ediliyor{background:#ede9fe;color:#5b21b6}
+.badge.teslimata_hazir{background:#dcfce7;color:#166534}
+.badge.teslim_edildi{background:#dcfce7;color:#166534}
+.meta{color:var(--muted);font-size:.82rem;margin-top:4px}
+.empty{text-align:center;padding:40px 16px;color:var(--muted)}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:80;overflow:auto}
+.sheet{background:#fff;margin:12px auto;max-width:480px;border-radius:16px;padding:16px}
+.sheet h2{font-size:1.05rem;margin-bottom:12px}
+.form-section{font-size:.78rem;font-weight:800;color:var(--primary);margin:14px 0 8px;text-transform:uppercase}
+.fg{margin-bottom:10px}
+.fg label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px}
+.row2{display:flex;gap:8px}
+.actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.btn{flex:1;border:0;border-radius:10px;padding:12px;font-weight:700;color:#fff;min-width:30%}
+.btn-primary{background:var(--primary)}
+.btn-sec{background:#71717a}
+.btn-ok{background:var(--success)}
+.btn-bad{background:var(--danger)}
+.scan{margin-top:6px;background:#111;color:#fff;width:100%}
+#video{width:100%;border-radius:10px;display:none;background:#000}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#18181b;color:#fff;padding:10px 14px;border-radius:10px;display:none;z-index:99}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.dot.red{background:#dc2626}
+.dot.green{background:#16a34a}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="header">
+    <div><h1>Arçelik Servis</h1><span class="header-date" id="header-date"></span></div>
+    <button class="btn-icon" id="btn-new">+</button>
+  </header>
+  <section class="dashboard">
+    <div class="stat-card" data-f="aktif"><div class="stat-number" id="c-aktif">0</div><div class="stat-label">Aktif İşler</div></div>
+    <div class="stat-card parts" data-f="parca_bekliyor"><div class="stat-number" id="c-parca">0</div><div class="stat-label">Parça Bekleyen</div></div>
+    <div class="stat-card test" data-f="test_bekliyor"><div class="stat-number" id="c-test">0</div><div class="stat-label">Test Bekleyen</div></div>
+    <div class="stat-card ready" data-f="teslimata_hazir"><div class="stat-number" id="c-hazir">0</div><div class="stat-label">Teslimata Hazır</div></div>
+  </section>
+  <section class="search-bar">
+    <input id="q" placeholder="Servis no, müşteri, getiren, model..." />
+    <select id="filter">
+      <option value="all">Tümü</option>
+      <option value="aktif">Aktif</option>
+      <option value="parca_bekliyor">Parça Bekleyen</option>
+      <option value="test_bekliyor">Test Bekleyen</option>
+      <option value="test_ediliyor">Test Ediliyor</option>
+      <option value="teslimata_hazir">Teslimata Hazır</option>
+      <option value="teslim_edildi">Teslim Edildi</option>
+    </select>
+  </section>
+  <main class="job-list" id="list"></main>
+  <div class="empty" id="empty" style="display:none">Henüz kayıt yok</div>
+</div>
 
+<div class="modal" id="modal-form">
+  <div class="sheet">
+    <h2 id="form-title">Yeni Ürün Kaydı</h2>
+    <input type="hidden" id="row-id" />
+    <div class="fg"><label>Servis No</label><input id="service-no" readonly /></div>
+    <div class="form-section">Müşteri</div>
+    <div class="fg"><label>Müşteri Adı *</label><input id="customer-name" /></div>
+    <div class="fg"><label>Kim Getirdi? *</label><input id="brought-by" /></div>
+    <div class="form-section">Ürün</div>
+    <div class="fg"><label>Ürün Modeli *</label><input id="product-model" /></div>
+    <div class="fg">
+      <label>Seri No / Barkod</label>
+      <input id="product-serial" />
+      <button type="button" class="btn btn-sec scan" id="btn-scan">Barkod Okut</button>
+      <video id="video" playsinline></video>
+    </div>
+    <div class="form-section">Arıza / Parça</div>
+    <div class="fg"><label>Arıza *</label><textarea id="fault" rows="2"></textarea></div>
+    <div class="fg"><label>Arızalı Parça</label><input id="faulty-part" /></div>
+    <div class="form-section">İş Durumu</div>
+    <div class="fg">
+      <label>Şu anki durum</label>
+      <select id="job-status">
+        <option value="aktif">Aktif / Yeni</option>
+        <option value="parca_bekliyor">Parça Bekliyor</option>
+        <option value="test_bekliyor">Test Bekliyor</option>
+        <option value="test_ediliyor">Test Ediliyor</option>
+        <option value="teslimata_hazir">Teslimata Hazır</option>
+        <option value="teslim_edildi">Teslim Edildi</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Parça Durumu</label>
+      <select id="part-status">
+        <option value="yok">Parça Yok / Gerekmiyor</option>
+        <option value="siparis_edildi">Sipariş Edildi</option>
+        <option value="geldi">Parça Geldi</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Test Sonucu</label>
+      <select id="test-status">
+        <option value="">Henüz Test Edilmedi</option>
+        <option value="basarili">Test Başarılı</option>
+        <option value="basarisiz">Test Başarısız</option>
+      </select>
+    </div>
+    <div class="fg"><label>Notlar</label><textarea id="notes" rows="2"></textarea></div>
+    <div class="actions">
+      <button class="btn btn-sec" type="button" id="btn-cancel">İptal</button>
+      <button class="btn btn-primary" type="button" id="btn-save">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-detail">
+  <div class="sheet">
+    <div id="detail-body"></div>
+    <div class="actions" id="detail-acts"></div>
+    <div class="actions"><button class="btn btn-sec" type="button" id="btn-close-detail">Kapat</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const TOKEN="jg2Dgv53OPwpFo6F5x6M2NHL2p6wJxM1";
+const TABLE=1212205;
+const BASE="https://api.baserow.io/api/database/rows/table/"+TABLE+"/";
+const ST={aktif:"Aktif",parca_bekliyor:"Parça Bekliyor",parca_geldi:"Parça Geldi",test_bekliyor:"Test Bekliyor",test_ediliyor:"Test Ediliyor",teslimata_hazir:"Teslimata Hazır",teslim_edildi:"Teslim Edildi"};
+let jobs=[], filter="all", q="", scanStream=null;
+
+function hdr(){return {"Authorization":"Token "+TOKEN,"Content-Type":"application/json"}}
+function toast(t){const e=document.getElementById("toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",1800)}
+function parseJob(r){
+  let extra={};
+  try{
+    const raw=r["Issue Description"]||"";
+    const m=raw.match(/\[\[JSON\]\]([\s\S]*)\[\[\/JSON\]\]/);
+    if(m) extra=JSON.parse(m[1]);
+    else extra={fault:raw};
+  }catch(e){extra={fault:r["Issue Description"]||""}}
+  return {
+    id:r.id,
+    serviceNo:r["Request ID"]||extra.serviceNo||"",
+    customerName:extra.customerName||(r.Customer&&r.Customer[0]&&r.Customer[0].value)||"",
+    broughtBy:extra.broughtBy||"",
+    productModel:r["Device Model"]||extra.productModel||"",
+    productSerial:extra.productSerial||"",
+    faultDescription:extra.faultDescription||extra.fault||"",
+    faultyPart:extra.faultyPart||"",
+    partStatus:extra.partStatus||"yok",
+    testStatus:extra.testStatus||"",
+    notes:extra.notes||"",
+    status:extra.status||mapFromBaserow(r.Status&&r.Status.value),
+    createdAt:extra.createdAt||""
+  };
+}
+function mapFromBaserow(s){
+  if(s==="Completed") return "teslimata_hazir";
+  if(s==="Cancelled") return "teslim_edildi";
+  if(s==="In Progress") return "parca_bekliyor";
+  return "aktif";
+}
+function mapToBaserow(st){
+  if(st==="teslim_edildi") return "Cancelled";
+  if(st==="teslimata_hazir") return "Completed";
+  if(st==="aktif") return "Received";
+  return "In Progress";
+}
+function pack(job){
+  return job.faultDescription+"\n[[JSON]]"+JSON.stringify({
+    customerName:job.customerName,broughtBy:job.broughtBy,productSerial:job.productSerial,
+    faultDescription:job.faultDescription,faultyPart:job.faultyPart,partStatus:job.partStatus,
+    testStatus:job.testStatus,notes:job.notes,status:job.status,serviceNo:job.serviceNo,
+    createdAt:job.createdAt||new Date().toISOString()
+  })+"[[/JSON]]";
+}
+async function load(){
+  try{
+    const res=await fetch(BASE+"?user_field_names=true&size=200",{headers:hdr()});
+    const data=await res.json();
+    jobs=(data.results||[]).map(parseJob).sort((a,b)=>String(b.serviceNo).localeCompare(String(a.serviceNo)));
+    render();
+  }catch(e){toast("Bağlantı hatası")}
+}
+function render(){
+  document.getElementById("c-aktif").textContent=jobs.filter(j=>j.status==="aktif").length;
+  document.getElementById("c-parca").textContent=jobs.filter(j=>j.status==="parca_bekliyor").length;
+  document.getElementById("c-test").textContent=jobs.filter(j=>j.status==="test_bekliyor"||j.status==="test_ediliyor").length;
+  document.getElementById("c-hazir").textContent=jobs.filter(j=>j.status==="teslimata_hazir").length;
+  let list=jobs.slice();
+  if(filter!=="all") list=list.filter(j=>j.status===filter);
+  if(q){const s=q.toLowerCase();list=list.filter(j=>[j.serviceNo,j.customerName,j.broughtBy,j.productModel,j.productSerial,j.faultyPart].join(" ").toLowerCase().includes(s))}
+  const el=document.getElementById("list");
+  const empty=document.getElementById("empty");
+  if(!list.length){el.innerHTML="";empty.style.display="block";return}
+  empty.style.display="none";
+  el.innerHTML=list.map(j=>`<div class="job-card ${j.status}" onclick="openDetail(${j.id})">
+    <div class="job-top"><b>${esc(j.serviceNo)}</b><span class="badge ${j.status}">${ST[j.status]||j.status}</span></div>
+    <div>${esc(j.productModel||"-")}</div>
+    <div class="meta">${esc(j.customerName||"-")} • Getiren: ${esc(j.broughtBy||"-")}</div>
+    <div class="meta">${j.partStatus==="geldi"?'<span class="dot green"></span>Parça geldi':(j.partStatus==="siparis_edildi"?'<span class="dot red"></span>Parça bekleniyor':'')}</div>
+  </div>`).join("");
+}
+function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))}
+function nextNo(){
+  let max=0;
+  jobs.forEach(j=>{const m=String(j.serviceNo).match(/(\d+)$/);if(m) max=Math.max(max,parseInt(m[1],10))});
+  return "ARC-2026-"+String(max+1).padStart(4,"0");
+}
+function openForm(job){
+  document.getElementById("form-title").textContent=job?"Kaydı Düzenle":"Yeni Ürün Kaydı";
+  document.getElementById("row-id").value=job?job.id:"";
+  document.getElementById("service-no").value=job?job.serviceNo:nextNo();
+  document.getElementById("customer-name").value=job?job.customerName:"";
+  document.getElementById("brought-by").value=job?job.broughtBy:"";
+  document.getElementById("product-model").value=job?job.productModel:"";
+  document.getElementById("product-serial").value=job?job.productSerial:"";
+  document.getElementById("fault").value=job?job.faultDescription:"";
+  document.getElementById("faulty-part").value=job?job.faultyPart:"";
+  document.getElementById("job-status").value=job?job.status:"aktif";
+  document.getElementById("part-status").value=job?job.partStatus:"yok";
+  document.getElementById("test-status").value=job?job.testStatus:"";
+  document.getElementById("notes").value=job?job.notes:"";
+  document.getElementById("modal-form").style.display="block";
+}
+async function saveForm(){
+  const job={
+    id:document.getElementById("row-id").value,
+    serviceNo:document.getElementById("service-no").value,
+    customerName:document.getElementById("customer-name").value.trim(),
+    broughtBy:document.getElementById("brought-by").value.trim(),
+    productModel:document.getElementById("product-model").value.trim(),
+    productSerial:document.getElementById("product-serial").value.trim(),
+    faultDescription:document.getElementById("fault").value.trim(),
+    faultyPart:document.getElementById("faulty-part").value.trim(),
+    status:document.getElementById("job-status").value,
+    partStatus:document.getElementById("part-status").value,
+    testStatus:document.getElementById("test-status").value,
+    notes:document.getElementById("notes").value.trim(),
+    createdAt:new Date().toISOString()
+  };
+  if(!job.customerName||!job.broughtBy||!job.productModel||!job.faultDescription){toast("Zorunlu alanları doldur");return}
+  if(job.status==="parca_bekliyor") job.partStatus="siparis_edildi";
+  if(job.status==="test_bekliyor"||job.status==="test_ediliyor") job.partStatus="geldi";
+  const body={"Request ID":job.serviceNo,"Device Model":job.productModel,"Issue Description":pack(job),"Status":mapToBaserow(job.status)};
+  const url=job.id?BASE+job.id+"/?user_field_names=true":BASE+"?user_field_names=true";
+  const res=await fetch(url,{method:job.id?"PATCH":"POST",headers:hdr(),body:JSON.stringify(body)});
+  if(!res.ok){toast("Kaydedilemedi");return}
+  stopScan();
+  document.getElementById("modal-form").style.display="none";
+  toast("Kaydedildi");
+  await load();
+}
+function openDetail(id){
+  const j=jobs.find(x=>x.id===id); if(!j) return;
+  document.getElementById("detail-body").innerHTML=`
+    <h2>${esc(j.serviceNo)}</h2>
+    <p><b>${ST[j.status]}</b></p>
+    <p>Müşteri: ${esc(j.customerName)}</p>
+    <p>Kim getirdi: ${esc(j.broughtBy)}</p>
+    <p>Ürün: ${esc(j.productModel)}</p>
+    <p>Seri/Barkod: ${esc(j.productSerial||"-")}</p>
+    <p>Arıza: ${esc(j.faultDescription)}</p>
+    <p>Parça: ${esc(j.faultyPart||"-")} ${j.partStatus==="geldi"?'<span class="dot green"></span>':'<span class="dot red"></span>'}</p>
+    <p>Test: ${j.testStatus==="basarili"?"Başarılı":j.testStatus==="basarisiz"?"Başarısız":"Bekliyor"}</p>
+    <p>Not: ${esc(j.notes||"-")}</p>`;
+  let a=`<button class="btn btn-primary" onclick="editJob(${j.id})">Düzenle</button>`;
+  if(j.partStatus==="siparis_edildi") a+=`<button class="btn btn-ok" onclick="quick(${j.id},'part')">Parça Geldi</button>`;
+  if(j.status==="test_bekliyor"||j.status==="test_ediliyor"){
+    a+=`<button class="btn btn-ok" onclick="quick(${j.id},'ok')">Test Başarılı</button>`;
+    a+=`<button class="btn btn-bad" onclick="quick(${j.id},'fail')">Test Başarısız</button>`;
+  }
+  if(j.status==="teslimata_hazir") a+=`<button class="btn btn-ok" onclick="quick(${j.id},'deliv')">Teslim Edildi</button>`;
+  a+=`<button class="btn btn-bad" onclick="delJob(${j.id})">Sil</button>`;
+  document.getElementById("detail-acts").innerHTML=a;
+  document.getElementById("modal-detail").style.display="block";
+}
+function editJob(id){document.getElementById("modal-detail").style.display="none";openForm(jobs.find(x=>x.id===id))}
+async function quick(id,kind){
+  const j=jobs.find(x=>x.id===id); if(!j) return;
+  if(kind==="part"){j.partStatus="geldi";j.status="test_bekliyor"}
+  if(kind==="ok"){j.testStatus="basarili";j.status="teslimata_hazir"}
+  if(kind==="fail"){j.testStatus="basarisiz";j.status="aktif"}
+  if(kind==="deliv"){j.status="teslim_edildi"}
+  const body={"Request ID":j.serviceNo,"Device Model":j.productModel,"Issue Description":pack(j),"Status":mapToBaserow(j.status)};
+  await fetch(BASE+id+"/?user_field_names=true",{method:"PATCH",headers:hdr(),body:JSON.stringify(body)});
+  document.getElementById("modal-detail").style.display="none";
+  await load();
+}
+async function delJob(id){
+  if(!confirm("Silinsin mi?")) return;
+  await fetch(BASE+id+"/",{method:"DELETE",headers:hdr()});
+  document.getElementById("modal-detail").style.display="none";
+  await load();
+}
+async function startScan(){
+  const video=document.getElementById("video");
+  try{
+    scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+    video.srcObject=scanStream; video.style.display="block"; await video.play();
+    if("BarcodeDetector" in window){
+      const det=new BarcodeDetector({formats:["qr_code","code_128","ean_13","ean_8","code_39"]});
+      const loop=async()=>{
+        if(!scanStream) return;
+        try{const codes=await det.detect(video); if(codes[0]){document.getElementById("product-serial").value=codes[0].rawValue; stopScan(); toast("Barkod okundu"); return}}catch(e){}
+        requestAnimationFrame(loop);
+      }; loop();
+    } else toast("Bu telefonda barkod API yok, elle yaz");
+  }catch(e){toast("Kamera açılamadı")}
+}
+function stopScan(){
+  if(scanStream){scanStream.getTracks().forEach(t=>t.stop()); scanStream=null}
+  const v=document.getElementById("video"); v.style.display="none"; v.srcObject=null;
+}
+document.getElementById("header-date").textContent=new Date().toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long"});
+document.getElementById("btn-new").onclick=()=>openForm(null);
+document.getElementById("btn-cancel").onclick=()=>{stopScan();document.getElementById("modal-form").style.display="none"};
+document.getElementById("btn-save").onclick=saveForm;
+document.getElementById("btn-close-detail").onclick=()=>document.getElementById("modal-detail").style.display="none";
+document.getElementById("btn-scan").onclick=startScan;
+document.getElementById("q").oninput=e=>{q=e.target.value;render()};
+document.getElementById("filter").onchange=e=>{filter=e.target.value;render()};
+document.querySelectorAll(".stat-card").forEach(c=>c.onclick=()=>{filter=c.dataset.f;document.getElementById("filter").value=filter;render()});
+load();
+</script>
+</body>
+</html>
