@@ -67,7 +67,10 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
 <div id="app">
   <header class="header">
     <div><h1>Arçelik Servis</h1><span class="header-date" id="header-date"></span></div>
-    <button class="btn-icon" id="btn-new">+</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn-icon" id="btn-refresh" title="Yenile">↻</button>
+      <button class="btn-icon" id="btn-new">+</button>
+    </div>
   </header>
   <section class="dashboard">
     <div class="stat-card" data-f="aktif"><div class="stat-number" id="c-aktif">0</div><div class="stat-label">Aktif İşler</div></div>
@@ -355,6 +358,7 @@ function stopScan(){
 }
 document.getElementById("header-date").textContent=new Date().toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long"});
 document.getElementById("btn-new").onclick=()=>openForm(null);
+document.getElementById("btn-refresh").onclick=async()=>{toast("Yenileniyor");await load();};
 document.getElementById("btn-cancel").onclick=()=>{stopScan();document.getElementById("modal-form").style.display="none"};
 document.getElementById("btn-save").onclick=saveForm;
 document.getElementById("btn-close-detail").onclick=()=>document.getElementById("modal-detail").style.display="none";
