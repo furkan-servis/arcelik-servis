@@ -300,7 +300,10 @@ function openDetail(id){
     <p>Not: ${esc(j.notes||"-")}</p>`;
   let a=`<button class="btn btn-primary" onclick="editJob(${j.id})">Düzenle</button>`;
   if(j.partStatus==="siparis_edildi") a+=`<button class="btn btn-ok" onclick="quick(${j.id},'part')">Parça Geldi</button>`;
-  if(j.status==="test_bekliyor"||j.status==="test_ediliyor"){
+  if(j.status==="test_bekliyor"){
+    a+=`<button class="btn btn-ok" onclick="quick(${j.id},'testing')">Test Ediliyor</button>`;
+  }
+  if(j.status==="test_ediliyor"){
     a+=`<button class="btn btn-ok" onclick="quick(${j.id},'ok')">Test Başarılı</button>`;
     a+=`<button class="btn btn-bad" onclick="quick(${j.id},'fail')">Test Başarısız</button>`;
   }
@@ -313,6 +316,7 @@ function editJob(id){document.getElementById("modal-detail").style.display="none
 async function quick(id,kind){
   const j=jobs.find(x=>x.id===id); if(!j) return;
   if(kind==="part"){j.partStatus="geldi";j.status="test_bekliyor"}
+  if(kind==="testing"){j.status="test_ediliyor"}
   if(kind==="ok"){j.testStatus="basarili";j.status="teslimata_hazir"}
   if(kind==="fail"){j.testStatus="basarisiz";j.status="aktif"}
   if(kind==="deliv"){j.status="teslim_edildi"}
