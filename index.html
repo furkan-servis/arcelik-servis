@@ -62,6 +62,22 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
 .dot.red{background:#dc2626}
 .dot.green{background:#16a34a}
 
+
+.blob{position:absolute;border-radius:50%;background:rgba(255,255,255,.22)}
+.b1{width:140px;height:140px;left:-70px;top:18%;animation:inL .7s ease both}
+.b2{width:90px;height:90px;right:-40px;top:28%;animation:inR .75s .1s ease both}
+.b3{width:160px;height:160px;right:-80px;bottom:12%;animation:inR .8s .15s ease both}
+.b4{width:70px;height:70px;left:18%;bottom:-20px;animation:inB .7s .05s ease both}
+.bar{position:absolute;width:10px;background:#fff;opacity:.35}
+.bar.left{left:0;top:-20%;height:50%;animation:slideD .8s ease both}
+.bar.right{right:0;bottom:-20%;height:50%;animation:slideU .8s ease both}
+@keyframes inL{from{transform:translateX(-80px);opacity:0}to{transform:none;opacity:1}}
+@keyframes inR{from{transform:translateX(80px);opacity:0}to{transform:none;opacity:1}}
+@keyframes inB{from{transform:translateY(60px);opacity:0}to{transform:none;opacity:1}}
+@keyframes slideD{from{transform:translateY(-100%)}to{transform:none}}
+@keyframes slideU{from{transform:translateY(100%)}to{transform:none}}
+#splash{overflow:hidden}
+
 #splash{position:fixed;inset:0;background:#e30613;z-index:9999;display:flex;align-items:center;justify-content:center;animation:splashOut .5s ease 1.8s forwards}
 .splash-logo{color:#fff;font-size:2rem;font-weight:800;text-align:center;letter-spacing:.5px;animation:pop .5s ease}
 .splash-logo span{display:block;font-size:1.1rem;font-weight:600;opacity:.9;margin-top:4px}
@@ -76,7 +92,11 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
 </style>
 </head>
 <body>
-<div id="splash"><div class="splash-logo">Arçelik<br><span>Servis</span></div></div>
+<div id="splash">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div>
+  <div class="bar left"></div><div class="bar right"></div>
+  <div class="splash-logo">Arçelik<br><span>Servis</span></div>
+</div>
 <div id="app">
   <header class="header">
     <div><h1>Arçelik Servis</h1><span class="header-date" id="header-date"></span></div>
