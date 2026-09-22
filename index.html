@@ -109,6 +109,14 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
       <input id="product-serial" />
       <button type="button" class="btn btn-sec scan" id="btn-scan">Barkod Okut</button>
       <video id="video" playsinline></video>
+      <label style="margin-top:10px">Seri No Fotoğrafı</label>
+      <input type="hidden" id="serial-photo" />
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button type="button" class="btn btn-sec" id="btn-photo">Fotoğraf Çek / Seç</button>
+        <button type="button" class="btn btn-bad" id="btn-photo-del">Sil</button>
+      </div>
+      <input type="file" id="photo-file" accept="image/*" capture="environment" style="display:none" />
+      <img id="photo-preview" alt="" style="display:none;width:100%;max-height:220px;object-fit:contain;margin-top:8px;border-radius:10px;background:#111" />
     </div>
     <div class="form-section">Arıza / Parça</div>
     <div class="fg"><label>Arıza *</label><textarea id="fault" rows="2"></textarea></div>
@@ -182,6 +190,7 @@ function parseJob(r){
     broughtBy:extra.broughtBy||"",
     productModel:r["Device Model"]||extra.productModel||"",
     productSerial:extra.productSerial||"",
+    serialPhoto:extra.serialPhoto||"",
     faultDescription:extra.faultDescription||extra.fault||"",
     faultyPart:extra.faultyPart||"",
     partStatus:extra.partStatus||"yok",
@@ -205,7 +214,7 @@ function mapToBaserow(st){
 }
 function pack(job){
   return job.faultDescription+"\n[[JSON]]"+JSON.stringify({
-    customerName:job.customerName,broughtBy:job.broughtBy,productSerial:job.productSerial,
+    customerName:job.customerName,broughtBy:job.broughtBy,productSerial:job.productSerial,serialPhoto:job.serialPhoto||"",
     faultDescription:job.faultDescription,faultyPart:job.faultyPart,partStatus:job.partStatus,
     testStatus:job.testStatus,notes:job.notes,status:job.status,serviceNo:job.serviceNo,
     createdAt:job.createdAt||new Date().toISOString()
@@ -254,6 +263,9 @@ function openForm(job){
   document.getElementById("brought-by").value=job?job.broughtBy:"";
   document.getElementById("product-model").value=job?job.productModel:"";
   document.getElementById("product-serial").value=job?job.productSerial:"";
+  document.getElementById("serial-photo").value=job&&job.serialPhoto?job.serialPhoto:"";
+  const prev=document.getElementById("photo-preview");
+  if(job&&job.serialPhoto){prev.src=job.serialPhoto;prev.style.display="block"}else{prev.src="";prev.style.display="none"}
   document.getElementById("fault").value=job?job.faultDescription:"";
   document.getElementById("faulty-part").value=job?job.faultyPart:"";
   document.getElementById("job-status").value=job?job.status:"aktif";
@@ -270,6 +282,7 @@ async function saveForm(){
     broughtBy:document.getElementById("brought-by").value.trim(),
     productModel:document.getElementById("product-model").value.trim(),
     productSerial:document.getElementById("product-serial").value.trim(),
+    serialPhoto:document.getElementById("serial-photo").value,
     faultDescription:document.getElementById("fault").value.trim(),
     faultyPart:document.getElementById("faulty-part").value.trim(),
     status:document.getElementById("job-status").value,
@@ -301,6 +314,7 @@ function openDetail(id){
     <p>Kim getirdi: ${esc(j.broughtBy)}</p>
     <p>Ürün: ${esc(j.productModel)}</p>
     <p>Seri/Barkod: ${esc(j.productSerial||"-")}</p>
+    ${j.serialPhoto?`<p><img src="${j.serialPhoto}" style="width:100%;max-height:240px;object-fit:contain;border-radius:10px;background:#111" /></p>`:""}
     <p>Arıza: ${esc(j.faultDescription)}</p>
     <p>Parça: ${esc(j.faultyPart||"-")} ${j.partStatus==="geldi"?'<span class="dot green"></span>':'<span class="dot red"></span>'}</p>
     <p>Test: ${j.testStatus==="basarili"?"Başarılı":j.testStatus==="basarisiz"?"Başarısız":"Bekliyor"}</p>
@@ -362,7 +376,39 @@ document.getElementById("btn-refresh").onclick=async()=>{toast("Yenileniyor");aw
 document.getElementById("btn-cancel").onclick=()=>{stopScan();document.getElementById("modal-form").style.display="none"};
 document.getElementById("btn-save").onclick=saveForm;
 document.getElementById("btn-close-detail").onclick=()=>document.getElementById("modal-detail").style.display="none";
+function setPhoto(data){
+  document.getElementById("serial-photo").value=data||"";
+  const prev=document.getElementById("photo-preview");
+  if(data){prev.src=data;prev.style.display="block"}else{prev.src="";prev.style.display="none"}
+}
+function compressPhoto(file){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      const max=900;
+      let w=img.width,h=img.height;
+      if(w>max||h>max){const r=Math.min(max/w,max/h);w=Math.round(w*r);h=Math.round(h*r)}
+      const c=document.createElement("canvas");
+      c.width=w;c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL("image/jpeg",0.62));
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);reject()};
+    img.src=url;
+  });
+}
 document.getElementById("btn-scan").onclick=startScan;
+document.getElementById("btn-photo").onclick=()=>document.getElementById("photo-file").click();
+document.getElementById("btn-photo-del").onclick=()=>setPhoto("");
+document.getElementById("photo-file").onchange=async e=>{
+  const f=e.target.files&&e.target.files[0];
+  e.target.value="";
+  if(!f) return;
+  try{setPhoto(await compressPhoto(f)); toast("Fotoğraf eklendi")}
+  catch(err){toast("Fotoğraf alınamadı")}
+};
 document.getElementById("q").oninput=e=>{q=e.target.value;render()};
 document.getElementById("filter").onchange=e=>{filter=e.target.value;render()};
 document.querySelectorAll(".stat-card").forEach(c=>c.onclick=()=>{filter=c.dataset.f;document.getElementById("filter").value=filter;render()});
