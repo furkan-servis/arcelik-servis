@@ -61,6 +61,9 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
 .dot.red{background:#dc2626}
 .dot.green{background:#16a34a}
+.tabs{display:flex;gap:6px;padding:0 12px 10px}
+.tab{flex:1;border:1px solid var(--border);background:#fff;border-radius:10px;padding:8px 6px;font-size:.78rem;font-weight:700}
+.tab.on{background:var(--primary);color:#fff;border-color:var(--primary)}
 
 
 .blob{position:absolute;border-radius:50%;background:#fff;opacity:.45}
@@ -111,6 +114,11 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
     <div class="stat-card test" data-f="test_bekliyor"><div class="stat-number" id="c-test">0</div><div class="stat-label">Test Bekleyen</div></div>
     <div class="stat-card ready" data-f="teslimata_hazir"><div class="stat-number" id="c-hazir">0</div><div class="stat-label">Teslimata Hazır</div></div>
   </section>
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-view="aktifler">İşler</button>
+    <button class="tab" data-view="arsiv">Arşiv</button>
+    <button class="tab" data-view="cop">Çöp</button>
+  </div>
   <section class="search-bar">
     <input id="q" placeholder="Servis no, müşteri, getiren, model..." />
     <select id="filter">
@@ -204,7 +212,7 @@ const TOKEN="jg2Dgv53OPwpFo6F5x6M2NHL2p6wJxM1";
 const TABLE=1212205;
 const BASE="https://api.baserow.io/api/database/rows/table/"+TABLE+"/";
 const ST={aktif:"Aktif",parca_bekliyor:"Parça Bekliyor",parca_geldi:"Parça Geldi",test_bekliyor:"Test Bekliyor",test_ediliyor:"Test Ediliyor",teslimata_hazir:"Teslimata Hazır",teslim_edildi:"Teslim Edildi"};
-let jobs=[], filter="all", q="", scanStream=null;
+let jobs=[], filter="all", q="", scanStream=null, view="aktifler";
 
 function hdr(){return {"Authorization":"Token "+TOKEN,"Content-Type":"application/json"}}
 function toast(t){const e=document.getElementById("toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",1800)}
@@ -230,7 +238,9 @@ function parseJob(r){
     testStatus:extra.testStatus||"",
     notes:extra.notes||"",
     status:extra.status||mapFromBaserow(r.Status&&r.Status.value),
-    createdAt:extra.createdAt||""
+    createdAt:extra.createdAt||"",
+    deleted:!!extra.deleted,
+    deletedAt:extra.deletedAt||""
   };
 }
 function mapFromBaserow(s){
@@ -250,7 +260,7 @@ function pack(job){
     customerName:job.customerName,broughtBy:job.broughtBy,productSerial:job.productSerial,serialPhoto:job.serialPhoto||"",
     faultDescription:job.faultDescription,faultyPart:job.faultyPart,partStatus:job.partStatus,
     testStatus:job.testStatus,notes:job.notes,status:job.status,serviceNo:job.serviceNo,
-    createdAt:job.createdAt||new Date().toISOString()
+    createdAt:job.createdAt||new Date().toISOString(),deleted:!!job.deleted,deletedAt:job.deletedAt||""
   })+"[[/JSON]]";
 }
 async function load(){
@@ -262,11 +272,15 @@ async function load(){
   }catch(e){toast("Bağlantı hatası")}
 }
 function render(){
-  document.getElementById("c-aktif").textContent=jobs.filter(j=>j.status==="aktif").length;
-  document.getElementById("c-parca").textContent=jobs.filter(j=>j.status==="parca_bekliyor").length;
-  document.getElementById("c-test").textContent=jobs.filter(j=>j.status==="test_bekliyor"||j.status==="test_ediliyor").length;
-  document.getElementById("c-hazir").textContent=jobs.filter(j=>j.status==="teslimata_hazir").length;
+  const live=jobs.filter(j=>!j.deleted && j.status!=="teslim_edildi");
+  document.getElementById("c-aktif").textContent=live.filter(j=>j.status==="aktif").length;
+  document.getElementById("c-parca").textContent=live.filter(j=>j.status==="parca_bekliyor").length;
+  document.getElementById("c-test").textContent=live.filter(j=>j.status==="test_bekliyor"||j.status==="test_ediliyor").length;
+  document.getElementById("c-hazir").textContent=live.filter(j=>j.status==="teslimata_hazir").length;
   let list=jobs.slice();
+  if(view==="aktifler") list=list.filter(j=>!j.deleted && j.status!=="teslim_edildi");
+  else if(view==="arsiv") list=list.filter(j=>!j.deleted && j.status==="teslim_edildi");
+  else if(view==="cop") list=list.filter(j=>j.deleted);
   if(filter!=="all") list=list.filter(j=>j.status===filter);
   if(q){const s=q.toLowerCase();list=list.filter(j=>[j.serviceNo,j.customerName,j.broughtBy,j.productModel,j.productSerial,j.faultyPart].join(" ").toLowerCase().includes(s))}
   const el=document.getElementById("list");
@@ -364,7 +378,8 @@ function openDetail(id){
     a+=`<button class="btn btn-bad" onclick="quick(${j.id},'fail')">Test Başarısız</button>`;
   }
   if(j.status==="teslimata_hazir") a+=`<button class="btn btn-ok" onclick="quick(${j.id},'deliv')">Teslim Edildi</button>`;
-  a+=`<button class="btn btn-bad" onclick="delJob(${j.id})">Sil</button>`;
+  if(j.deleted){a+=`<button class="btn btn-ok" onclick="restoreJob(${j.id})">Geri Al</button>`;a+=`<button class="btn btn-bad" onclick="hardDel(${j.id})">Kalıcı Sil</button>`;}
+  else {a+=`<button class="btn btn-bad" onclick="delJob(${j.id})">Çöpe At</button>`;}
   document.getElementById("detail-acts").innerHTML=a;
   document.getElementById("modal-detail").style.display="block";
 }
@@ -381,10 +396,32 @@ async function quick(id,kind){
   document.getElementById("modal-detail").style.display="none";
   load();
 }
+async function patchJob(j){
+  const body={"Request ID":j.serviceNo,"Device Model":j.productModel,"Issue Description":pack(j),"Status":mapToBaserow(j.status)};
+  await fetch(BASE+j.id+"/?user_field_names=true",{method:"PATCH",headers:hdr(),body:JSON.stringify(body)});
+}
 async function delJob(id){
-  if(!confirm("Silinsin mi?")) return;
+  const j=jobs.find(x=>x.id===id); if(!j) return;
+  if(!confirm("Çöpe atılsın mı?")) return;
+  j.deleted=true; j.deletedAt=new Date().toISOString();
+  await patchJob(j);
+  document.getElementById("modal-detail").style.display="none";
+  toast("Çöpe alındı");
+  load();
+}
+async function restoreJob(id){
+  const j=jobs.find(x=>x.id===id); if(!j) return;
+  j.deleted=false; j.deletedAt="";
+  await patchJob(j);
+  document.getElementById("modal-detail").style.display="none";
+  toast("Geri alındı");
+  load();
+}
+async function hardDel(id){
+  if(!confirm("Kalıcı silinsin mi? Geri gelmez.")) return;
   await fetch(BASE+id+"/",{method:"DELETE",headers:hdr()});
   document.getElementById("modal-detail").style.display="none";
+  toast("Kalıcı silindi");
   load();
 }
 async function startScan(){
@@ -448,7 +485,9 @@ document.getElementById("photo-file").onchange=async e=>{
 };
 document.getElementById("q").oninput=e=>{q=e.target.value;render()};
 document.getElementById("filter").onchange=e=>{filter=e.target.value;render()};
-document.querySelectorAll(".stat-card").forEach(c=>c.onclick=()=>{filter=c.dataset.f;document.getElementById("filter").value=filter;render()});
+document.querySelectorAll(".stat-card").forEach(c=>c.onclick=()=>{filter=c.dataset.f;document.getElementById("filter").value=filter;view="aktifler";syncTabs();render()});
+document.querySelectorAll(".tab").forEach(c=>c.onclick=()=>{view=c.dataset.view;syncTabs();render()});
+function syncTabs(){document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.view===view));}
 setTimeout(()=>{const s=document.getElementById("splash"); if(s) s.remove();},1700);
 load();
 </script>
