@@ -61,6 +61,9 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
 .dot.red{background:#dc2626}
 .dot.green{background:#16a34a}
+.rowline{display:flex;justify-content:space-between;gap:8px;font-size:.82rem;margin-top:4px}
+.rowline .k{color:var(--muted);min-width:64px}
+.thumb{width:100%;max-height:120px;object-fit:cover;border-radius:8px;margin-top:8px;background:#111}
 </style>
 </head>
 <body>
@@ -242,11 +245,14 @@ function render(){
   empty.style.display="none";
   el.innerHTML=list.map(j=>`<div class="job-card ${j.status}" onclick="openDetail(${j.id})">
     <div class="job-top"><b>${esc(j.serviceNo)}</b><span class="badge ${j.status}">${ST[j.status]||j.status}</span></div>
-    <div>${esc(j.productModel||"-")}</div>
-    <div class="meta">${esc(j.customerName||"-")} • Getiren: ${esc(j.broughtBy||"-")}</div>
-    <div class="meta">Tarih: ${formatDate(j.createdAt)}</div>
-    <div class="meta">${j.partStatus==="geldi"?'<span class="dot green"></span>Parça geldi':(j.partStatus==="siparis_edildi"?'<span class="dot red"></span>Parça bekleniyor':'')}</div>
-  </div>`).join("");
+    <div class="rowline"><span class="k">Ürün</span><span>${esc(j.productModel||"-")}</span></div>
+    <div class="rowline"><span class="k">Müşteri</span><span>${esc(j.customerName||"-")}</span></div>
+    <div class="rowline"><span class="k">Getiren</span><span>${esc(j.broughtBy||"-")}</span></div>
+    <div class="rowline"><span class="k">Seri</span><span>${esc(j.productSerial||"-")}</span></div>
+    <div class="rowline"><span class="k">Parça</span><span>${j.partStatus==="geldi"?'<span class="dot green"></span>Geldi':(j.partStatus==="siparis_edildi"?'<span class="dot red"></span>Bekleniyor':'Gerekmiyor')}</span></div>
+    <div class="rowline"><span class="k">Tarih</span><span>${formatDate(j.createdAt)}</span></div>
+    ${j.serialPhoto?`<img class="thumb" src="${j.serialPhoto}" alt="">`:''}
+  </div>`).join("")
 }
 function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))}
 function formatDate(s){if(!s)return "-";const d=new Date(s);if(isNaN(d))return "-";return d.toLocaleString("tr-TR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}
