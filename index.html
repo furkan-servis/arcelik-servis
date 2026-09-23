@@ -20,7 +20,7 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
 .header h1{font-size:1.2rem}
 .header-date{font-size:.75rem;opacity:.85;display:block;margin-top:2px}
 .btn-icon{width:42px;height:42px;border-radius:50%;font-size:1.6rem;border:0;background:#fff;color:var(--primary);font-weight:700}
-.dashboard{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 12px}
+.dashboard{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 12px}.stat-card.testing .stat-number{color:#7c3aed}
 .stat-card{background:var(--card);border-radius:var(--radius);padding:14px 12px;text-align:center;box-shadow:var(--shadow);border:2px solid transparent}
 .stat-card.on{border-color:var(--primary)}
 .stat-number{font-size:1.5rem;font-weight:800}
@@ -115,6 +115,7 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
     <div class="stat-card" data-f="aktif"><div class="stat-number" id="c-aktif">0</div><div class="stat-label">Aktif İşler</div></div>
     <div class="stat-card parts" data-f="parca_bekliyor"><div class="stat-number" id="c-parca">0</div><div class="stat-label">Parça Bekleyen</div></div>
     <div class="stat-card test" data-f="test_bekliyor"><div class="stat-number" id="c-test">0</div><div class="stat-label">Test Bekleyen</div></div>
+    <div class="stat-card testing" data-f="test_ediliyor"><div class="stat-number" id="c-testing">0</div><div class="stat-label">Test Ediliyor</div></div>
     <div class="stat-card ready" data-f="teslimata_hazir"><div class="stat-number" id="c-hazir">0</div><div class="stat-label">Teslimata Hazır</div></div>
   </section>
   <div class="tabs" id="tabs">
@@ -278,7 +279,8 @@ function render(){
   const live=jobs.filter(j=>!j.deleted && j.status!=="teslim_edildi");
   document.getElementById("c-aktif").textContent=live.filter(j=>j.status==="aktif").length;
   document.getElementById("c-parca").textContent=live.filter(j=>j.status==="parca_bekliyor").length;
-  document.getElementById("c-test").textContent=live.filter(j=>j.status==="test_bekliyor"||j.status==="test_ediliyor").length;
+  document.getElementById("c-test").textContent=live.filter(j=>j.status==="test_bekliyor").length;
+  document.getElementById("c-testing").textContent=live.filter(j=>j.status==="test_ediliyor").length;
   document.getElementById("c-hazir").textContent=live.filter(j=>j.status==="teslimata_hazir").length;
   let list=jobs.slice();
   if(view==="aktifler") list=list.filter(j=>!j.deleted && j.status!=="teslim_edildi");
