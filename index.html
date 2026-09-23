@@ -303,7 +303,6 @@ function render(){
     <div class="rowline"><span class="k">Seri</span><span>${esc(j.productSerial||"-")}</span></div>
     <div class="rowline"><span class="k">Parça</span><span>${j.partStatus==="geldi"?'<span class="dot green"></span>Geldi':(j.partStatus==="siparis_edildi"?'<span class="dot red"></span>Bekleniyor':'Gerekmiyor')}</span></div>
     <div class="rowline"><span class="k">Tarih</span><span>${formatDate(j.createdAt)}</span></div>
-    ${j.serialPhoto?`<img class="thumb" src="${j.serialPhoto}" alt="">`:''}
   </div>`).join("")
 }
 function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))}
