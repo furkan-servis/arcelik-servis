@@ -150,6 +150,7 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
     <div class="fg"><label>Adres</label><input id="address" placeholder="Mahalle / semt" /></div>
     <div class="form-section">Ürün</div>
     <div class="fg"><label>Ürün Modeli *</label><input id="product-model" /></div>
+    <div class="fg"><label>Değişim Ürün</label><input id="exchange-product" placeholder="Değişen ürün / model" /></div>
     <div class="fg">
       <label>Seri No / Barkod</label>
       <input id="product-serial" />
@@ -236,6 +237,7 @@ function parseJob(r){
     broughtBy:extra.broughtBy||"",
     address:extra.address||"",
     productModel:r["Device Model"]||extra.productModel||"",
+    exchangeProduct:extra.exchangeProduct||"",
     productSerial:extra.productSerial||"",
     serialPhoto:extra.serialPhoto||"",
     faultDescription:extra.faultDescription||extra.fault||"",
@@ -289,7 +291,7 @@ function render(){
   else if(view==="arsiv") list=list.filter(j=>!j.deleted && j.status==="teslim_edildi");
   else if(view==="cop") list=list.filter(j=>j.deleted);
   if(filter!=="all") list=list.filter(j=>j.status===filter);
-  if(q){const s=q.toLowerCase();list=list.filter(j=>[j.serviceNo,j.customerName,j.broughtBy,j.address,j.productModel,j.productSerial,j.faultyPart].join(" ").toLowerCase().includes(s))}
+  if(q){const s=q.toLowerCase();list=list.filter(j=>[j.serviceNo,j.customerName,j.broughtBy,j.address,j.productModel,j.exchangeProduct,j.productSerial,j.faultyPart].join(" ").toLowerCase().includes(s))}
   const el=document.getElementById("list");
   const empty=document.getElementById("empty");
   if(!list.length){el.innerHTML="";empty.style.display="block";return}
@@ -297,6 +299,7 @@ function render(){
   el.innerHTML=list.map(j=>`<div class="job-card ${j.status}" onclick="openDetail(${j.id})">
     <div class="job-top"><b>${esc(j.serviceNo)}</b><span class="badge ${j.status}">${ST[j.status]||j.status}</span></div>
     <div class="rowline"><span class="k">Ürün</span><span>${esc(j.productModel||"-")}</span></div>
+    ${j.exchangeProduct?`<div class="rowline"><span class="k">Değişim</span><span>${esc(j.exchangeProduct)}</span></div>`:""}
     <div class="rowline"><span class="k">Müşteri</span><span>${esc(j.customerName||"-")}</span></div>
     <div class="rowline"><span class="k">Getiren</span><span>${esc(j.broughtBy||"-")}</span></div>
     <div class="rowline"><span class="k">Adres</span><span>${esc(j.address||"-")}</span></div>
@@ -320,6 +323,7 @@ function openForm(job){
   document.getElementById("brought-by").value=job?job.broughtBy:"";
   document.getElementById("address").value=job?job.address||"":"";
   document.getElementById("product-model").value=job?job.productModel:"";
+  document.getElementById("exchange-product").value=job?job.exchangeProduct||"":"";
   document.getElementById("product-serial").value=job?job.productSerial:"";
   document.getElementById("serial-photo").value=job&&job.serialPhoto?job.serialPhoto:"";
   const prev=document.getElementById("photo-preview");
@@ -340,6 +344,7 @@ async function saveForm(){
     broughtBy:document.getElementById("brought-by").value.trim(),
     address:document.getElementById("address").value.trim(),
     productModel:document.getElementById("product-model").value.trim(),
+    exchangeProduct:document.getElementById("exchange-product").value.trim(),
     productSerial:document.getElementById("product-serial").value.trim(),
     serialPhoto:document.getElementById("serial-photo").value,
     faultDescription:document.getElementById("fault").value.trim(),
@@ -373,6 +378,7 @@ function openDetail(id){
     <p>Kim getirdi: ${esc(j.broughtBy)}</p>
     <p>Adres: ${esc(j.address||"-")}</p>
     <p>Ürün: ${esc(j.productModel)}</p>
+    <p>Değişim ürün: ${esc(j.exchangeProduct||"-")}</p>
     <p>Seri/Barkod: ${esc(j.productSerial||"-")}</p>
     ${j.serialPhoto?`<p><img src="${j.serialPhoto}" style="width:100%;max-height:240px;object-fit:contain;border-radius:10px;background:#111" /></p>`:""}
     <p>Arıza: ${esc(j.faultDescription)}</p>
