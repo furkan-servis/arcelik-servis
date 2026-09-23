@@ -37,7 +37,6 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
 .job-card.test_bekliyor,.job-card.test_ediliyor{border-left-color:var(--purple)}
 .job-card.teslimata_hazir{border-left-color:var(--success)}
 .job-card.teslim_edildi{border-left-color:#16a34a}
-.job-card.degisim{border-left-color:#0f766e}
 .job-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .badge{font-size:.72rem;padding:3px 8px;border-radius:999px;background:#f4f4f5;font-weight:700}
 .badge.parca_bekliyor{background:#ffedd5;color:#9a3412}
@@ -134,7 +133,6 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
       <option value="test_ediliyor">Test Ediliyor</option>
       <option value="teslimata_hazir">Teslimata Hazır</option>
       <option value="teslim_edildi">Teslim Edildi</option>
-        <option value="degisim">Değişim</option>
     </select>
   </section>
   <main class="job-list" id="list"></main>
@@ -152,6 +150,7 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
     <div class="fg"><label>Adres</label><input id="address" placeholder="Mahalle / semt" /></div>
     <div class="form-section">Ürün</div>
     <div class="fg"><label>Ürün Modeli *</label><input id="product-model" /></div>
+    <div class="fg"><label>Değişim Ürün</label><input id="exchange-product" placeholder="Değişen ürün / model" /></div>
     <div class="fg">
       <label>Seri No / Barkod</label>
       <input id="product-serial" />
@@ -179,7 +178,6 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
         <option value="test_ediliyor">Test Ediliyor</option>
         <option value="teslimata_hazir">Teslimata Hazır</option>
         <option value="teslim_edildi">Teslim Edildi</option>
-        <option value="degisim">Değişim</option>
       </select>
     </div>
     <div class="fg">
@@ -219,7 +217,7 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
 const TOKEN="jg2Dgv53OPwpFo6F5x6M2NHL2p6wJxM1";
 const TABLE=1212205;
 const BASE="https://api.baserow.io/api/database/rows/table/"+TABLE+"/";
-const ST={aktif:"Aktif",parca_bekliyor:"Parça Bekliyor",parca_geldi:"Parça Geldi",test_bekliyor:"Test Bekliyor",test_ediliyor:"Test Ediliyor",teslimata_hazir:"Teslimata Hazır",teslim_edildi:"Teslim Edildi",degisim:"Değişim"};
+const ST={aktif:"Aktif",parca_bekliyor:"Parça Bekliyor",parca_geldi:"Parça Geldi",test_bekliyor:"Test Bekliyor",test_ediliyor:"Test Ediliyor",teslimata_hazir:"Teslimata Hazır",teslim_edildi:"Teslim Edildi"};
 let jobs=[], filter="all", q="", scanStream=null, view="aktifler";
 
 function hdr(){return {"Authorization":"Token "+TOKEN,"Content-Type":"application/json"}}
@@ -239,6 +237,7 @@ function parseJob(r){
     broughtBy:extra.broughtBy||"",
     address:extra.address||"",
     productModel:r["Device Model"]||extra.productModel||"",
+    exchangeProduct:extra.exchangeProduct||"",
     productSerial:extra.productSerial||"",
     serialPhoto:extra.serialPhoto||"",
     faultDescription:extra.faultDescription||extra.fault||"",
@@ -292,7 +291,7 @@ function render(){
   else if(view==="arsiv") list=list.filter(j=>!j.deleted && j.status==="teslim_edildi");
   else if(view==="cop") list=list.filter(j=>j.deleted);
   if(filter!=="all") list=list.filter(j=>j.status===filter);
-  if(q){const s=q.toLowerCase();list=list.filter(j=>[j.serviceNo,j.customerName,j.broughtBy,j.address,j.productModel,j.productSerial,j.faultyPart].join(" ").toLowerCase().includes(s))}
+  if(q){const s=q.toLowerCase();list=list.filter(j=>[j.serviceNo,j.customerName,j.broughtBy,j.address,j.productModel,j.exchangeProduct,j.productSerial,j.faultyPart].join(" ").toLowerCase().includes(s))}
   const el=document.getElementById("list");
   const empty=document.getElementById("empty");
   if(!list.length){el.innerHTML="";empty.style.display="block";return}
@@ -300,6 +299,7 @@ function render(){
   el.innerHTML=list.map(j=>`<div class="job-card ${j.status}" onclick="openDetail(${j.id})">
     <div class="job-top"><b>${esc(j.serviceNo)}</b><span class="badge ${j.status}">${ST[j.status]||j.status}</span></div>
     <div class="rowline"><span class="k">Ürün</span><span>${esc(j.productModel||"-")}</span></div>
+    ${j.exchangeProduct?`<div class="rowline"><span class="k">Değişim</span><span>${esc(j.exchangeProduct)}</span></div>`:""}
     <div class="rowline"><span class="k">Müşteri</span><span>${esc(j.customerName||"-")}</span></div>
     <div class="rowline"><span class="k">Getiren</span><span>${esc(j.broughtBy||"-")}</span></div>
     <div class="rowline"><span class="k">Adres</span><span>${esc(j.address||"-")}</span></div>
@@ -323,6 +323,7 @@ function openForm(job){
   document.getElementById("brought-by").value=job?job.broughtBy:"";
   document.getElementById("address").value=job?job.address||"":"";
   document.getElementById("product-model").value=job?job.productModel:"";
+  document.getElementById("exchange-product").value=job?job.exchangeProduct||"":"";
   document.getElementById("product-serial").value=job?job.productSerial:"";
   document.getElementById("serial-photo").value=job&&job.serialPhoto?job.serialPhoto:"";
   const prev=document.getElementById("photo-preview");
@@ -343,6 +344,7 @@ async function saveForm(){
     broughtBy:document.getElementById("brought-by").value.trim(),
     address:document.getElementById("address").value.trim(),
     productModel:document.getElementById("product-model").value.trim(),
+    exchangeProduct:document.getElementById("exchange-product").value.trim(),
     productSerial:document.getElementById("product-serial").value.trim(),
     serialPhoto:document.getElementById("serial-photo").value,
     faultDescription:document.getElementById("fault").value.trim(),
@@ -376,6 +378,7 @@ function openDetail(id){
     <p>Kim getirdi: ${esc(j.broughtBy)}</p>
     <p>Adres: ${esc(j.address||"-")}</p>
     <p>Ürün: ${esc(j.productModel)}</p>
+    <p>Değişim ürün: ${esc(j.exchangeProduct||"-")}</p>
     <p>Seri/Barkod: ${esc(j.productSerial||"-")}</p>
     ${j.serialPhoto?`<p><img src="${j.serialPhoto}" style="width:100%;max-height:240px;object-fit:contain;border-radius:10px;background:#111" /></p>`:""}
     <p>Arıza: ${esc(j.faultDescription)}</p>
@@ -390,8 +393,7 @@ function openDetail(id){
     a+=`<button class="btn btn-ok" onclick="quick(${j.id},'ok')">Test Başarılı</button>`;
     a+=`<button class="btn btn-bad" onclick="quick(${j.id},'fail')">Test Başarısız</button>`;
   }
-  if(j.status==="teslimata_hazir"){a+=`<button class="btn btn-ok" onclick="quick(${j.id},'deliv')">Teslim Edildi</button>`;a+=`<button class="btn btn-sec" onclick="quick(${j.id},'swap')">Değişim</button>`;}
-  if(j.status==="degisim") a+=`<button class="btn btn-ok" onclick="quick(${j.id},'deliv')">Teslim Edildi</button>`;
+  if(j.status==="teslimata_hazir") a+=`<button class="btn btn-ok" onclick="quick(${j.id},'deliv')">Teslim Edildi</button>`;
   if(j.deleted){a+=`<button class="btn btn-ok" onclick="restoreJob(${j.id})">Geri Al</button>`;a+=`<button class="btn btn-bad" onclick="hardDel(${j.id})">Kalıcı Sil</button>`;}
   else {a+=`<button class="btn btn-bad" onclick="delJob(${j.id})">Çöpe At</button>`;}
   document.getElementById("detail-acts").innerHTML=a;
@@ -404,7 +406,6 @@ async function quick(id,kind){
   if(kind==="testing"){j.status="test_ediliyor"}
   if(kind==="ok"){j.testStatus="basarili";j.status="teslimata_hazir"}
   if(kind==="fail"){j.testStatus="basarisiz";j.status="aktif"}
-  if(kind==="swap"){j.status="degisim"}
   if(kind==="deliv"){j.status="teslim_edildi"}
   const body={"Request ID":j.serviceNo,"Device Model":j.productModel,"Issue Description":pack(j),"Status":mapToBaserow(j.status)};
   await fetch(BASE+id+"/?user_field_names=true",{method:"PATCH",headers:hdr(),body:JSON.stringify(body)});
