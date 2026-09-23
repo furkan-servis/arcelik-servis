@@ -147,6 +147,7 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
     <div class="form-section">Müşteri</div>
     <div class="fg"><label>Müşteri Adı *</label><input id="customer-name" /></div>
     <div class="fg"><label>Kim Getirdi? *</label><input id="brought-by" /></div>
+    <div class="fg"><label>Adres</label><input id="address" placeholder="Mahalle / semt" /></div>
     <div class="form-section">Ürün</div>
     <div class="fg"><label>Ürün Modeli *</label><input id="product-model" /></div>
     <div class="fg">
@@ -233,6 +234,7 @@ function parseJob(r){
     serviceNo:r["Request ID"]||extra.serviceNo||"",
     customerName:extra.customerName||(r.Customer&&r.Customer[0]&&r.Customer[0].value)||"",
     broughtBy:extra.broughtBy||"",
+    address:extra.address||"",
     productModel:r["Device Model"]||extra.productModel||"",
     productSerial:extra.productSerial||"",
     serialPhoto:extra.serialPhoto||"",
@@ -261,7 +263,7 @@ function mapToBaserow(st){
 }
 function pack(job){
   return job.faultDescription+"\n[[JSON]]"+JSON.stringify({
-    customerName:job.customerName,broughtBy:job.broughtBy,productSerial:job.productSerial,serialPhoto:job.serialPhoto||"",
+    customerName:job.customerName,broughtBy:job.broughtBy,address:job.address||"",productSerial:job.productSerial,serialPhoto:job.serialPhoto||"",
     faultDescription:job.faultDescription,faultyPart:job.faultyPart,partStatus:job.partStatus,
     testStatus:job.testStatus,notes:job.notes,status:job.status,serviceNo:job.serviceNo,
     createdAt:job.createdAt||new Date().toISOString(),deleted:!!job.deleted,deletedAt:job.deletedAt||""
@@ -287,7 +289,7 @@ function render(){
   else if(view==="arsiv") list=list.filter(j=>!j.deleted && j.status==="teslim_edildi");
   else if(view==="cop") list=list.filter(j=>j.deleted);
   if(filter!=="all") list=list.filter(j=>j.status===filter);
-  if(q){const s=q.toLowerCase();list=list.filter(j=>[j.serviceNo,j.customerName,j.broughtBy,j.productModel,j.productSerial,j.faultyPart].join(" ").toLowerCase().includes(s))}
+  if(q){const s=q.toLowerCase();list=list.filter(j=>[j.serviceNo,j.customerName,j.broughtBy,j.address,j.productModel,j.productSerial,j.faultyPart].join(" ").toLowerCase().includes(s))}
   const el=document.getElementById("list");
   const empty=document.getElementById("empty");
   if(!list.length){el.innerHTML="";empty.style.display="block";return}
@@ -297,6 +299,7 @@ function render(){
     <div class="rowline"><span class="k">Ürün</span><span>${esc(j.productModel||"-")}</span></div>
     <div class="rowline"><span class="k">Müşteri</span><span>${esc(j.customerName||"-")}</span></div>
     <div class="rowline"><span class="k">Getiren</span><span>${esc(j.broughtBy||"-")}</span></div>
+    <div class="rowline"><span class="k">Adres</span><span>${esc(j.address||"-")}</span></div>
     <div class="rowline"><span class="k">Seri</span><span>${esc(j.productSerial||"-")}</span></div>
     <div class="rowline"><span class="k">Parça</span><span>${j.partStatus==="geldi"?'<span class="dot green"></span>Geldi':(j.partStatus==="siparis_edildi"?'<span class="dot red"></span>Bekleniyor':'Gerekmiyor')}</span></div>
     <div class="rowline"><span class="k">Tarih</span><span>${formatDate(j.createdAt)}</span></div>
@@ -316,6 +319,7 @@ function openForm(job){
   document.getElementById("service-no").value=job?job.serviceNo:nextNo();
   document.getElementById("customer-name").value=job?job.customerName:"";
   document.getElementById("brought-by").value=job?job.broughtBy:"";
+  document.getElementById("address").value=job?job.address||"":"";
   document.getElementById("product-model").value=job?job.productModel:"";
   document.getElementById("product-serial").value=job?job.productSerial:"";
   document.getElementById("serial-photo").value=job&&job.serialPhoto?job.serialPhoto:"";
@@ -335,6 +339,7 @@ async function saveForm(){
     serviceNo:document.getElementById("service-no").value,
     customerName:document.getElementById("customer-name").value.trim(),
     broughtBy:document.getElementById("brought-by").value.trim(),
+    address:document.getElementById("address").value.trim(),
     productModel:document.getElementById("product-model").value.trim(),
     productSerial:document.getElementById("product-serial").value.trim(),
     serialPhoto:document.getElementById("serial-photo").value,
@@ -367,6 +372,7 @@ function openDetail(id){
     <p><b>${ST[j.status]}</b></p>
     <p>Müşteri: ${esc(j.customerName)}</p>
     <p>Kim getirdi: ${esc(j.broughtBy)}</p>
+    <p>Adres: ${esc(j.address||"-")}</p>
     <p>Ürün: ${esc(j.productModel)}</p>
     <p>Seri/Barkod: ${esc(j.productSerial||"-")}</p>
     ${j.serialPhoto?`<p><img src="${j.serialPhoto}" style="width:100%;max-height:240px;object-fit:contain;border-radius:10px;background:#111" /></p>`:""}
