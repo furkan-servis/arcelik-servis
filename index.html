@@ -84,10 +84,10 @@ html,body{height:100%;width:100%;overflow:hidden;position:fixed;inset:0;overscro
 @keyframes slideU{from{transform:translateY(100%)}to{transform:none}}
 #splash{overflow:hidden}
 
-#splash{position:fixed;inset:0;background:#e30613;z-index:9999;display:flex;align-items:center;justify-content:center;animation:splashOut .5s ease 2.6s forwards}
+#splash{position:fixed;inset:0;background:#e30613;z-index:9999;display:flex;align-items:center;justify-content:center;animation:splashOut .5s ease 3.4s forwards}
 .splash-logo{color:#fff;font-size:2rem;font-weight:800;text-align:center;letter-spacing:.5px;animation:pop .5s ease}
 .splash-logo span{display:block;font-size:1.1rem;font-weight:600;opacity:.9;margin-top:4px}
-.splash-logo small{display:block;margin-top:14px;font-size:.78rem;font-weight:600;letter-spacing:.08em;opacity:.85;text-transform:none}
+.splash-logo small{display:block;margin-top:18px;font-size:1rem;font-weight:800;letter-spacing:.12em;opacity:1;background:rgba(0,0,0,.2);padding:8px 14px;border-radius:999px}
 @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes splashOut{to{opacity:0;visibility:hidden}}
 #app{animation:appIn .4s ease .9s both}
@@ -454,7 +454,7 @@ function stopScan(){
   if(scanStream){scanStream.getTracks().forEach(t=>t.stop()); scanStream=null}
   const v=document.getElementById("video"); v.style.display="none"; v.srcObject=null;
 }
-setTimeout(()=>{const s=document.getElementById("splash"); if(s){s.style.display="none";s.remove();}},3200);
+setTimeout(()=>{const s=document.getElementById("splash"); if(s){s.style.display="none";s.remove();}},4000);
 document.getElementById("header-date").textContent=new Date().toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long"});
 document.getElementById("btn-new").onclick=()=>openForm(null);
 document.getElementById("btn-refresh").onclick=async()=>{toast("Yenileniyor");load();};
